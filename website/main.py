@@ -108,6 +108,54 @@ def folder(folderid):
   except:
     flask.abort(404)
 
+@app.route("/api/folders/<string:folderid>/<string:fn>")
+def get_file(folderid, fn):
+  psw=open(f"folders/{folderid}/.password.txt","r").read().strip()
+  if not request.json or not "password" in request.json or str(request.json["password"]).strip() != psw:
+    return make_response("Invalid password", 401)
+  if not fn in os.listdir(f"folders/{folderid}"):
+    return flask.abort(400)
+  try:
+    return base64.b64encode(open(f"folders/{folderid}/{fn}", "rb").read()).decode()
+  except:
+    return flask.abort(400)
+
+@app.route("/api/folders/<string:folderid>/<string:folder1>/<string:fn>")
+def get_file1(folderid, folder1, fn):
+  psw=open(f"folders/{folderid}/.password.txt","r").read().strip()
+  if not request.json or not "password" in request.json or str(request.json["password"]).strip() != psw:
+    return make_response("Invalid password", 401)
+  if not folder1 in os.listdir(f"folders/{folderid}") or not fn in os.listdir(f"folders/{folderid}/{folder1}"):
+    return flask.abort(400)
+  try:
+    return base64.b64encode(open(f"folders/{folderid}/{folder1}/{fn}", "rb").read()).decode()
+  except:
+    return flask.abort(400)
+
+@app.route("/api/folders/<string:folderid>/<string:folder1>/<string:folder2>/<string:fn>")
+def get_file2(folderid, folder1, folder2, fn):
+  psw=open(f"folders/{folderid}/.password.txt","r").read().strip()
+  if not request.json or not "password" in request.json or str(request.json["password"]).strip() != psw:
+    return make_response("Invalid password", 401)
+  if not folder1 in os.listdir(f"folders/{folderid}") or not folder2 in os.listdir(f"folders/{folderid}/{folder1}") or not fn in os.listdir(f"folders/{folderid}/{folder1}/{folder2}"):
+    return flask.abort(400)
+  try:
+    return base64.b64encode(open(f"folders/{folderid}/{folder1}/{folder2}/{fn}", "rb").read()).decode()
+  except:
+    return flask.abort(400)
+
+@app.route("/api/folders/<string:folderid>/<string:folder1>/<string:folder2>/<string:folder3>/<string:fn>")
+def get_file3(folderid, folder1, folder2, folder3, fn):
+  psw=open(f"folders/{folderid}/.password.txt","r").read().strip()
+  if not request.json or not "password" in request.json or str(request.json["password"]).strip() != psw:
+    return make_response("Invalid password", 401)
+  if not folder1 in os.listdir(f"folders/{folderid}") or not folder2 in os.listdir(f"folders/{folderid}/{folder1}") or not folder3 in os.listdir(f"folders/{folderid}/{folder1},") or not fn in os.listdir(f"folders/{folderid}/{folder1}/{folder2}/{folder3}"):
+    return flask.abort(400)
+  try:
+    return base64.b64encode(open(f"folders/{folderid}/{folder1}/{folder2}/{folder3}/{fn}", "rb").read()).decode()
+  except:
+    return flask.abort(400)
+
 @app.route("/cdn/<string:filename>")
 def cdn_file(filename):
   try:
