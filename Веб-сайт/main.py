@@ -136,7 +136,7 @@ def admin_exec(password, cmd):
   return make_response("Code has been launched", 202)
 
 def run():
-  app.run(host="0.0.0.0", port=8080)
+  app.run(host="0.0.0.0", port=2288)
 
 if __name__ == "__main__":
   run()
