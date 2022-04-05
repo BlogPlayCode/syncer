@@ -1,11 +1,23 @@
-import os, flask, threading, base64
+import os, flask, threading, base64, datetime
 from flask import Flask, render_template, make_response, redirect, request
 
 app=Flask(__name__)
 comming_soon=redirect("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT4g2xq07HFCVAo-jnoY1LNpQQ5IsX__ko94MQP4inESCott-gizRUHJm5_m0y5e-n6K-o&usqp=CAU", 307)
 
+def log(text):
+  text = str(text)
+  try:
+    prev_log = open("logs.log","r").read()
+  except:
+    prev_log = "LOGS WAS CLEARED"
+  time=datetime.datetime.utcnow() + datetime.timedelta(hours = 3)
+  open("logs.log", "w").write(prev_log + f"""\n
+[{time.strftime("%d/%m/%Y %H:%M:%S")}]:  {text}
+""")
+
 @app.route('/')
 def index():
+  log("Кто-то зашел на главную страницу")
   return render_template("index.html")
 
 @app.route("/favicon.ico")
@@ -27,6 +39,7 @@ def downloader(filetype):
 @app.route("/api/folders", methods=["POST"])
 def create_folder():
   if not request.json or not "password" in request.json:
+    log("Некоректный запрос post api/folders")
     return flask.abort(400)
   id=1
   for fid in os.listdir("folders"):
@@ -37,6 +50,7 @@ def create_folder():
       pass
   os.mkdir(f"folders/{id}")
   open(f"folders/{id}/.password.txt","w").write(request.json["password"].strip())
+  log(f"Создана папка id: {id}, пароль: {request.json['password'].strip()}")
   return make_response({"id": id}, 201)
 
 @app.route("/api/folders/<string:folderid>", methods = ["PATCH", "DELETE", "GET"])
@@ -51,6 +65,7 @@ def folder(folderid):
           resp=make_response("Invalid password", 401)
       except:
         resp=flask.abort(404)
+      log(f"Запрошена информация о папке {folderid}")
       return resp
     elif request.method == "PATCH":
       if not request.json:
@@ -63,12 +78,15 @@ def folder(folderid):
       if not "password" in req_json or str(req_json["password"]).strip() != psw:
         return make_response("Invalid password", 401)
       del req_json["password"]
+      updated=""
       for fn in req_json:
         if fn != ".password.txt":
+          updated+=f"\n{fn}"
           if req_json[fn]:
             open(f"folders/{folderid}/{fn}","wb").write(base64.b64decode(bytes(req_json[fn])))
           else:
             os.remove(f"folders/{folderid}/{fn}")
+      log(f"Обновлена папка {folderid}, обновленые файлы: {updated}")
       return flask.abort(201)
     elif request.method == "DELETE":
       req_json=request.json
@@ -78,7 +96,11 @@ def folder(folderid):
         return flask.abort(404)
       if not "password" in req_json or str(req_json["password"]).strip() != psw:
         return make_response("Invalid password", 401)
+      files=os.listdir(f"folder/{folderid}")
+      files.remove(".password.txt")
+      files=str(files)[2:-2].replace('" ,', ' ,')
       os.system(f"rm folder/{folderid} -r")
+      log(f"Удалена папка {folderid}, содержала {files}")
       return flask.abort(202)
   except:
     flask.abort(404)
@@ -101,8 +123,16 @@ def admin_exec(password, cmd):
     return flask.abort(403)
   if not cmd:
     return flask.abort(400)
-  code=base64.b64decode(cmd).decode()
+  if cmd in ["logs", "view logs", "view_logs", "log"]:
+    log("АДМИН: запрос логов")
+    try:
+      logs=open("logs.log", "r").read()
+    except:
+      logs="NO LOGS"
+    return logs
+  code=base64.b64decode(cmd).decode().strip()
   threading.Thread(target=exec, args=(code, {**globals(), **locals()})).start()
+  log(f"АДМИН: выполнить {code}")
   return make_response("Code has been launched", 202)
 
 def run():
